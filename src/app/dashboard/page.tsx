@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { createAuthServerClient } from "@/lib/supabase/auth-server";
+import { requireActiveMembership } from "@/lib/auth/require-active-membership";
 
 export const dynamic = "force-dynamic";
 
@@ -86,15 +85,7 @@ async function getDashboardData() {
 }
 
 export default async function DashboardPage() {
-    const authClient = await createAuthServerClient();
-
-  const {
-    data: { user },
-  } = await authClient.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  await requireActiveMembership();
   
   const data = await getDashboardData();
 
