@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { createAuthServerClient } from "@/lib/supabase/auth-server";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +28,16 @@ function formatBoolean(value: unknown): string {
 }
 
 export default async function TenantsPage() {
+    const authClient = await createAuthServerClient();
+
+  const {
+    data: { user },
+  } = await authClient.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+  
   const { data, error } = await supabaseAdmin
     .from("tenant_configs")
     .select(
