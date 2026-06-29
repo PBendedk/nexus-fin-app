@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { createAuthServerClient } from "@/lib/supabase/auth-server";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +86,16 @@ async function getDashboardData() {
 }
 
 export default async function DashboardPage() {
+    const authClient = await createAuthServerClient();
+
+  const {
+    data: { user },
+  } = await authClient.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+  
   const data = await getDashboardData();
 
   const kpis = [
