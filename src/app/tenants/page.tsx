@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { createAuthServerClient } from "@/lib/supabase/auth-server";
+import { requireActiveMembership } from "@/lib/auth/require-active-membership";
 
 export const dynamic = "force-dynamic";
 
@@ -28,16 +27,8 @@ function formatBoolean(value: unknown): string {
 }
 
 export default async function TenantsPage() {
-    const authClient = await createAuthServerClient();
+  await requireActiveMembership();
 
-  const {
-    data: { user },
-  } = await authClient.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-  
   const { data, error } = await supabaseAdmin
     .from("tenant_configs")
     .select(
