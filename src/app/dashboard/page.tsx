@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireActiveMembership } from "@/lib/auth/require-active-membership";
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -50,11 +50,15 @@ async function getDashboardData() {
   }
 
   if (receivablesResult.error) {
-    throw new Error(`Error reading receivables: ${receivablesResult.error.message}`);
+    throw new Error(
+      `Error reading receivables: ${receivablesResult.error.message}`
+    );
   }
 
   if (allocationsResult.error) {
-    throw new Error(`Error reading payment allocations: ${allocationsResult.error.message}`);
+    throw new Error(
+      `Error reading payment allocations: ${allocationsResult.error.message}`
+    );
   }
 
   const totalInvoiced = invoicesResult.data.reduce(
@@ -86,7 +90,7 @@ async function getDashboardData() {
 
 export default async function DashboardPage() {
   await requireActiveMembership();
-  
+
   const data = await getDashboardData();
 
   const kpis = [
@@ -131,17 +135,27 @@ export default async function DashboardPage() {
               Dashboard financiero interno
             </h1>
             <p className="mt-4 max-w-2xl text-slate-300">
-              Vista server-only conectada a Supabase para validar el MVP financiero:
-              facturas, pagos aplicados, saldo pendiente y auditoría.
+              Vista server-only conectada a Supabase para validar el MVP
+              financiero: facturas, pagos aplicados, saldo pendiente y
+              auditoría.
             </p>
           </div>
 
-          <Link
-            href="/"
-            className="w-fit rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-slate-200 hover:border-cyan-300 hover:text-cyan-200"
-          >
-            Volver a landing
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="w-fit rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-slate-200 hover:border-cyan-300 hover:text-cyan-200"
+            >
+              Volver a landing
+            </Link>
+
+            <Link
+              href="/logout"
+              className="w-fit rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-slate-200 hover:border-red-300 hover:text-red-200"
+            >
+              Logout
+            </Link>
+          </div>
         </header>
 
         <section className="grid gap-4 py-10 md:grid-cols-2 xl:grid-cols-4">
@@ -197,14 +211,14 @@ export default async function DashboardPage() {
                   UNIMED Demo → Corporación XYZ Demo
                 </p>
                 <p className="mt-2 text-slate-300">
-                  Factura demo: HNL 25,000. Pago aplicado: HNL 10,000.
-                  Saldo pendiente esperado: HNL 15,000.
+                  Factura demo: HNL 25,000. Pago aplicado: HNL 10,000. Saldo
+                  pendiente esperado: HNL 15,000.
                 </p>
               </div>
 
               <p className="text-slate-400">
-                Próximo control obligatorio: Auth, roles, tenant membership y
-                políticas RLS antes de exponer datos reales de clientes.
+                Próximo control obligatorio: tenant-scoped dashboard filtering
+                y políticas RLS antes de exponer datos reales de clientes.
               </p>
             </div>
           </div>

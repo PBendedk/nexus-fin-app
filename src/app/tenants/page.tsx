@@ -59,9 +59,15 @@ export default async function TenantsPage() {
     return (
       <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
         <div className="mx-auto max-w-5xl">
-          <Link href="/" className="text-sm text-cyan-300 hover:text-cyan-200">
-            ← Back to NEXUS FIN
-          </Link>
+          <div className="flex items-center justify-between gap-4">
+            <Link href="/" className="text-sm text-cyan-300 hover:text-cyan-200">
+              ← Back to NEXUS FIN
+            </Link>
+
+            <Link href="/logout" className="text-sm text-slate-300 hover:text-white">
+              Logout
+            </Link>
+          </div>
 
           <section className="mt-8 rounded-2xl border border-red-500/40 bg-red-950/40 p-6">
             <h1 className="text-2xl font-semibold">Tenant Config Error</h1>
