@@ -12,10 +12,15 @@ function formatHnl(value: number) {
   }).format(value);
 }
 
-async function getCount(table: string) {
-  const { count, error } = await supabaseAdmin
+async function getCount(table: string, allowedTenantIds: string[]) {
+  const query = supabaseAdmin
     .from(table)
     .select("*", { count: "exact", head: true });
+
+  const { count, error } =
+    table === "tenants"
+      ? await query.in("id", allowedTenantIds)
+      : await query.in("tenant_id", allowedTenantIds);
 
   if (error) {
     throw new Error(`Error reading ${table}: ${error.message}`);
@@ -24,7 +29,7 @@ async function getCount(table: string) {
   return count ?? 0;
 }
 
-async function getDashboardData() {
+async function getDashboardData(allowedTenantIds: string[]) {
   const [
     invoicesResult,
     receivablesResult,
@@ -35,15 +40,27 @@ async function getDashboardData() {
     paymentsCount,
     auditLogsCount,
   ] = await Promise.all([
-    supabaseAdmin.from("invoices").select("amount,status"),
-    supabaseAdmin.from("receivables").select("original_amount,balance,status"),
-    supabaseAdmin.from("payment_allocations").select("amount"),
-    getCount("tenants"),
-    getCount("companies"),
-    getCount("invoices"),
-    getCount("payments"),
-    getCount("audit_logs"),
-  ]);
+  supabaseAdmin
+    .from("invoices")
+    .select("amount,status")
+    .in("tenant_id", allowedTenantIds),
+
+  supabaseAdmin
+    .from("receivables")
+    .select("original_amount,balance,status")
+    .in("tenant_id", allowedTenantIds),
+
+  supabaseAdmin
+    .from("payment_allocations")
+    .select("amount")
+    .in("tenant_id", allowedTenantIds),
+
+  getCount("tenants", allowedTenantIds),
+  getCount("companies", allowedTenantIds),
+  getCount("invoices", allowedTenantIds),
+  getCount("payments", allowedTenantIds),
+  getCount("audit_logs", allowedTenantIds),
+]);
 
   if (invoicesResult.error) {
     throw new Error(`Error reading invoices: ${invoicesResult.error.message}`);
@@ -89,9 +106,11 @@ async function getDashboardData() {
 }
 
 export default async function DashboardPage() {
-  await requireActiveMembership();
+  const { memberships } = await requireActiveMembership();
 
-  const data = await getDashboardData();
+  const allowedTenantIds = memberships.map((membership) => membership.tenant_id);
+
+  const data = await getDashboardData(allowedTenantIds);
 
   const kpis = [
     {
