@@ -36,7 +36,7 @@ export async function requireActiveMembership() {
   }
 
   if (!memberships || memberships.length === 0) {
-    redirect("/login?error=unauthorized");
+    redirect("/unauthorized");;
   }
 
   return {
