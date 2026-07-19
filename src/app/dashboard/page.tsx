@@ -70,29 +70,29 @@ async function getDashboardData(allowedTenantIds: string[]) {
 
   if (receivablesResult.error) {
     throw new Error(
-      `Error reading receivables: ${receivablesResult.error.message}`
+      `Error reading receivables: ${receivablesResult.error.message}`,
     );
   }
 
   if (allocationsResult.error) {
     throw new Error(
-      `Error reading payment allocations: ${allocationsResult.error.message}`
+      `Error reading payment allocations: ${allocationsResult.error.message}`,
     );
   }
 
   const totalInvoiced = invoicesResult.data.reduce(
     (sum, invoice) => sum + Number(invoice.amount ?? 0),
-    0
+    0,
   );
 
   const totalReceivableBalance = receivablesResult.data.reduce(
     (sum, receivable) => sum + Number(receivable.balance ?? 0),
-    0
+    0,
   );
 
   const totalApplied = allocationsResult.data.reduce(
     (sum, allocation) => sum + Number(allocation.amount ?? 0),
-    0
+    0,
   );
 
   return {
@@ -110,21 +110,17 @@ async function getDashboardData(allowedTenantIds: string[]) {
 export default async function DashboardPage() {
   const { memberships } = await requireActiveMembership();
 
-  // 1. Leer la cookie para ver qué tenant eligió el usuario
   const cookieStore = await cookies();
   const activeCookie = cookieStore.get("nexus_active_tenant")?.value;
-
-  // 2. Validar por seguridad que la cookie pertenece a uno de sus tenants permitidos
   const isValidCookie = memberships.some((m) => m.tenant_id === activeCookie);
 
-  // 3. Asignar el tenant activo (la cookie si es válida, o el primero de la lista por defecto)
-  const currentTenantId = isValidCookie && activeCookie ? activeCookie : memberships[0].tenant_id;
+  const currentTenantId =
+    isValidCookie && activeCookie ? activeCookie : memberships[0].tenant_id;
 
-  // 4. Pasamos SOLO el tenant activo al query, en lugar de todos
   const data = await getDashboardData([currentTenantId]);
-
-  // Sacamos el nombre del tenant activo para mostrarlo en el título
-  const activeTenantName = memberships.find((m) => m.tenant_id === currentTenantId)?.tenant_name;
+  const activeTenantName = memberships.find(
+    (m) => m.tenant_id === currentTenantId,
+  )?.tenant_name;
 
   const kpis = [
     {
@@ -175,8 +171,11 @@ export default async function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <TenantSelector memberships={memberships} currentTenantId={currentTenantId} />
-            
+            <TenantSelector
+              memberships={memberships}
+              currentTenantId={currentTenantId}
+            />
+
             <Link
               href="/companies"
               className="text-sm font-bold text-cyan-400 hover:text-cyan-300 hover:underline"
@@ -186,27 +185,11 @@ export default async function DashboardPage() {
 
             <Link
               href="/"
-              className="text-sm font-medium hover:underline text-slate-200"
+              className="text-sm font-medium text-slate-200 hover:underline"
             >
               Landing
             </Link>
-            
-            <Link
-              href="/logout"
-              className="text-sm font-medium text-red-400 hover:underline"
-            >
-              Logout
-            </Link>
-          </div>
 
-          <div className="flex items-center gap-4">
-            <TenantSelector memberships={memberships} currentTenantId={currentTenantId} />
-            <Link
-              href="/"
-              className="text-sm font-medium hover:underline text-slate-200"
-            >
-              Volver a landing
-            </Link>
             <Link
               href="/logout"
               className="text-sm font-medium text-red-400 hover:underline"
