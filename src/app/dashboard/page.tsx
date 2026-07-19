@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireActiveMembership } from "@/lib/auth/require-active-membership";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+import { TenantSelector } from "@/components/tenant-selector";
 
 export const dynamic = "force-dynamic";
 
@@ -40,27 +42,27 @@ async function getDashboardData(allowedTenantIds: string[]) {
     paymentsCount,
     auditLogsCount,
   ] = await Promise.all([
-  supabaseAdmin
-    .from("invoices")
-    .select("amount,status")
-    .in("tenant_id", allowedTenantIds),
+    supabaseAdmin
+      .from("invoices")
+      .select("amount,status")
+      .in("tenant_id", allowedTenantIds),
 
-  supabaseAdmin
-    .from("receivables")
-    .select("original_amount,balance,status")
-    .in("tenant_id", allowedTenantIds),
+    supabaseAdmin
+      .from("receivables")
+      .select("original_amount,balance,status")
+      .in("tenant_id", allowedTenantIds),
 
-  supabaseAdmin
-    .from("payment_allocations")
-    .select("amount")
-    .in("tenant_id", allowedTenantIds),
+    supabaseAdmin
+      .from("payment_allocations")
+      .select("amount")
+      .in("tenant_id", allowedTenantIds),
 
-  getCount("tenants", allowedTenantIds),
-  getCount("companies", allowedTenantIds),
-  getCount("invoices", allowedTenantIds),
-  getCount("payments", allowedTenantIds),
-  getCount("audit_logs", allowedTenantIds),
-]);
+    getCount("tenants", allowedTenantIds),
+    getCount("companies", allowedTenantIds),
+    getCount("invoices", allowedTenantIds),
+    getCount("payments", allowedTenantIds),
+    getCount("audit_logs", allowedTenantIds),
+  ]);
 
   if (invoicesResult.error) {
     throw new Error(`Error reading invoices: ${invoicesResult.error.message}`);
@@ -108,29 +110,41 @@ async function getDashboardData(allowedTenantIds: string[]) {
 export default async function DashboardPage() {
   const { memberships } = await requireActiveMembership();
 
-  const allowedTenantIds = memberships.map((membership) => membership.tenant_id);
+  // 1. Leer la cookie para ver qué tenant eligió el usuario
+  const cookieStore = await cookies();
+  const activeCookie = cookieStore.get("nexus_active_tenant")?.value;
 
-  const data = await getDashboardData(allowedTenantIds);
+  // 2. Validar por seguridad que la cookie pertenece a uno de sus tenants permitidos
+  const isValidCookie = memberships.some((m) => m.tenant_id === activeCookie);
+
+  // 3. Asignar el tenant activo (la cookie si es válida, o el primero de la lista por defecto)
+  const currentTenantId = isValidCookie && activeCookie ? activeCookie : memberships[0].tenant_id;
+
+  // 4. Pasamos SOLO el tenant activo al query, en lugar de todos
+  const data = await getDashboardData([currentTenantId]);
+
+  // Sacamos el nombre del tenant activo para mostrarlo en el título
+  const activeTenantName = memberships.find((m) => m.tenant_id === currentTenantId)?.tenant_name;
 
   const kpis = [
     {
-      label: "Total facturado",
+      label: "Total Facturado",
       value: formatHnl(data.totalInvoiced),
       helper: "Monto total de facturas registradas.",
     },
     {
-      label: "Total aplicado",
+      label: "Total Aplicado",
       value: formatHnl(data.totalApplied),
       helper: "Pagos aplicados a cuentas por cobrar.",
     },
     {
-      label: "Saldo pendiente",
+      label: "Saldo Pendiente",
       value: formatHnl(data.totalReceivableBalance),
       helper: "Balance actual pendiente de cobro.",
     },
     {
-      label: "Audit events",
-      value: String(data.auditLogsCount),
+      label: "Audit Events",
+      value: data.auditLogsCount,
       helper: "Eventos registrados en la caja negra del sistema.",
     },
   ];
@@ -151,7 +165,7 @@ export default async function DashboardPage() {
               NEXUS FIN
             </p>
             <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">
-              Dashboard financiero interno
+              Dashboard financiero interno - {activeTenantName}
             </h1>
             <p className="mt-4 max-w-2xl text-slate-300">
               Vista server-only conectada a Supabase para validar el MVP
@@ -160,17 +174,42 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <TenantSelector memberships={memberships} currentTenantId={currentTenantId} />
+            
             <Link
-              href="/"
-              className="w-fit rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-slate-200 hover:border-cyan-300 hover:text-cyan-200"
+              href="/companies"
+              className="text-sm font-bold text-cyan-400 hover:text-cyan-300 hover:underline"
             >
-              Volver a landing
+              Clientes
             </Link>
 
             <Link
+              href="/"
+              className="text-sm font-medium hover:underline text-slate-200"
+            >
+              Landing
+            </Link>
+            
+            <Link
               href="/logout"
-              className="w-fit rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-slate-200 hover:border-red-300 hover:text-red-200"
+              className="text-sm font-medium text-red-400 hover:underline"
+            >
+              Logout
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <TenantSelector memberships={memberships} currentTenantId={currentTenantId} />
+            <Link
+              href="/"
+              className="text-sm font-medium hover:underline text-slate-200"
+            >
+              Volver a landing
+            </Link>
+            <Link
+              href="/logout"
+              className="text-sm font-medium text-red-400 hover:underline"
             >
               Logout
             </Link>
@@ -227,7 +266,7 @@ export default async function DashboardPage() {
 
               <div className="rounded-2xl bg-slate-950/60 p-5">
                 <p className="font-semibold text-cyan-200">
-                  UNIMED Demo → Corporación XYZ Demo
+                  {activeTenantName} → Corporación XYZ Demo
                 </p>
                 <p className="mt-2 text-slate-300">
                   Factura demo: HNL 25,000. Pago aplicado: HNL 10,000. Saldo
