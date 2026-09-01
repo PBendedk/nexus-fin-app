@@ -1,0 +1,6 @@
+{
+  "name": "NEXUS FIN",
+  "description": "ERP financiero ligero para documentos, cobros, riesgo y auditoría.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

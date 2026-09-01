@@ -1,15 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
-
-if (!supabaseUrl) {
-  throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL environment variable");
-}
-
-if (!supabaseSecretKey) {
-  throw new Error("Missing SUPABASE_SECRET_KEY environment variable");
-}
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+const supabaseSecretKey =
+  process.env.SUPABASE_SECRET_KEY || "placeholder-secret-key";
 
 export const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
   auth: {
@@ -17,3 +11,4 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
     autoRefreshToken: false,
   },
 });
+
